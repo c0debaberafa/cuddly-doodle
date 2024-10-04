@@ -172,6 +172,7 @@ mod devos {
     ) -> Result<()> {
         let election = &ctx.accounts.election; //does not need to be mutable
 
+        // 1st part is for counting individual votes
         // Iterate over all positions
         for (position_index, position) in election.positions.iter().enumerate() {
             msg!("Position {}: {}", position_index, position.name);
@@ -186,7 +187,32 @@ mod devos {
                 );
             }
         }
+        
+        // 2nd part is for declaring winners
+        let mut winners: Vec<(String, String)> = Vec::new(); // Vec to store (position_name, winning_candidate_name)
+        for position in &election.positions {
+            let mut top_candidate: Option<&Candidate> = None;
+            for candidate in &position.candidates {
+                match top_candidate {
+                    Some(c) if candidate.vote_count > c.vote_count => {
+                        top_candidate = Some(candidate);
+                    }
+                    None => {
+                        top_candidate = Some(candidate);
+                    }
+                    _ => {} // Keep the existing top candidate if no higher vote count is found
+                }
+            }
 
+            // If there's a winning candidate for the position, add it to the winners list
+            if let Some(winning_candidate) = top_candidate {
+                winners.push((position.name.clone(), winning_candidate.name.clone()));
+            }
+        }
+
+        for (position_name, candidate_name) in &winners {
+            msg!("Position: {} - Winner: {}", position_name, candidate_name);
+        }
         Ok(())
     }
 }
