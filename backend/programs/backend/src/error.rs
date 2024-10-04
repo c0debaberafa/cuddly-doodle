@@ -8,6 +8,10 @@ pub enum CreateElectionError {
     MaxCandidatesReached,
     #[msg("The maximum number of positions has been reached.")]
     MaxPositionsReached,
+    #[msg("This position has already been added.")]
+    PositionAlreadyAdded,
+    #[msg("This candidate has already been added.")]
+    CandidateAlreadyAdded,
     #[msg("This voter has already been added.")]
     VoterAlreadyAdded,
 }

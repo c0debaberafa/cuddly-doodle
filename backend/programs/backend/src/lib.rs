@@ -38,8 +38,15 @@ mod devos {
     ) -> Result<()> {
         let election = &mut ctx.accounts.election;
 
+        // Ensure the position is not already in the list
+        for position in &election.positions {
+            if position.name == position_name {
+                return Err(CreateElectionError::PositionAlreadyAdded.into());
+            }
+        }
+
         let position = Position {
-            position_name,
+            name: position_name,
             candidates: Vec::new(), // Initialize with an empty candidate list
         };
 
@@ -47,6 +54,7 @@ mod devos {
             (election.positions.len() + 1) <= (election.max_positions as usize),
             CreateElectionError::MaxPositionsReached
         );
+
         election.positions.push(position); // Add the position to the election
 
         Ok(())
@@ -74,6 +82,13 @@ mod devos {
             (position.candidates.len() + 1) <= (max_candidates as usize),
             CreateElectionError::MaxCandidatesReached
         );
+
+        // Ensure the position is not already in the list
+        for candidate in &position.candidates {
+            if candidate.name == candidate_name {
+                return Err(CreateElectionError::CandidateAlreadyAdded.into());
+            }
+        }
 
         // Create a new candidate
         let candidate = Candidate {
@@ -103,6 +118,7 @@ mod devos {
     pub fn vote(
         ctx: Context<Vote>,
         election_name: String,
+        authority: Pubkey,
         position_index: u32,  // Index of the position being voted for
         candidate_index: u32, // Index of the candidate being voted for
     ) -> Result<()> {
@@ -199,7 +215,7 @@ pub struct AddCandidate<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(election_name: String)]
+#[instruction(election_name: String, authority: Pubkey)]
 pub struct Vote<'info> {
     #[account(
         mut,
@@ -207,7 +223,6 @@ pub struct Vote<'info> {
         bump, 
         has_one = authority)]
     pub election: Account<'info, Election>,
-    pub authority: Signer<'info>,
     pub voter: Signer<'info>,
 }
 

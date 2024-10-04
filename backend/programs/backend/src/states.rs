@@ -34,7 +34,7 @@ impl Election {
 // The Position state, nested in the Election
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct Position {
-    pub position_name: String,      // Name of the position
+    pub name: String,      // Name of the position
     pub candidates: Vec<Candidate>, // List of candidates for the position
 }
 
