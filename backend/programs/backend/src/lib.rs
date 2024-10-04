@@ -165,6 +165,30 @@ mod devos {
         Ok(())
     }
 
+    pub fn tally_votes(
+        ctx: Context<TallyVotes>,
+        election_name: String,
+        authority: Pubkey,
+    ) -> Result<()> {
+        let election = &ctx.accounts.election; //does not need to be mutable
+
+        // Iterate over all positions
+        for (position_index, position) in election.positions.iter().enumerate() {
+            msg!("Position {}: {}", position_index, position.name);
+
+            // Iterate over all candidates in the position
+            for (candidate_index, candidate) in position.candidates.iter().enumerate() {
+                msg!(
+                    "  Candidate {}: {} has {} votes",
+                    candidate_index,
+                    candidate.name,
+                    candidate.vote_count
+                );
+            }
+        }
+
+        Ok(())
+    }
 }
 
 // --- contexts
@@ -236,5 +260,14 @@ pub struct AddVoter<'info> {
         has_one = authority)]
     pub election: Account<'info, Election>,
     pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+#[instruction(election_name: String, authority: Pubkey)]
+pub struct TallyVotes<'info> {
+    #[account(
+        seeds = [election_name.as_bytes(),authority.key().as_ref()],
+        bump)]
+    pub election: Account<'info, Election>,
 }
 // end of contexts ---
