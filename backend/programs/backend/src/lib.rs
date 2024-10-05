@@ -27,6 +27,7 @@ mod devos {
         election.max_candidates_per_position = max_candidates_per_position;
         election.voters = voters;
         election.votes = Vec::new(); // Initialize with an empty list of votes
+        election.is_open = false; //Initialize election as closed
 
         Ok(())
     }
@@ -38,6 +39,18 @@ mod devos {
     ) -> Result<()> {
         let election = &mut ctx.accounts.election;
 
+        // Ensure the signer is the authority
+        require!(
+            ctx.accounts.authority.key() == election.authority,
+            CreateElectionError::Unauthorized
+        );
+
+        // Ensure the election is closed before adding position
+        require!(
+            election.is_open == false,
+            CreateElectionError::ElectionIsOpen
+        );
+
         // Ensure the position is not already in the list
         for position in &election.positions {
             if position.name == position_name {
@@ -47,7 +60,10 @@ mod devos {
 
         let position = Position {
             name: position_name,
-            candidates: Vec::new(), // Initialize with an empty candidate list
+            candidates: vec![Candidate {
+                name: String::from("Abstain"),
+                vote_count: 0,
+            }], // Initialize the "Abstain" candidate properly
         };
 
         require!(
@@ -68,6 +84,18 @@ mod devos {
     ) -> Result<()> {
         let election = &mut ctx.accounts.election;
         let max_candidates: u32 = election.max_candidates_per_position;
+
+        // Ensure the signer is the authority
+        require!(
+            ctx.accounts.authority.key() == election.authority,
+            CreateElectionError::Unauthorized
+        );
+
+        // Ensure the election is closed before adding candidate
+        require!(
+            election.is_open == false,
+            CreateElectionError::ElectionIsOpen
+        );
 
         // Ensure the position index is valid
         require!(
@@ -96,14 +124,31 @@ mod devos {
             vote_count: 0, // Initialize with 0 votes
         };
 
-        // Add the candidate to the position's list of candidates
-        position.candidates.push(candidate);
+        // Insert the new candidate just before the "Abstain" candidate
+        let abstain_index = position
+            .candidates
+            .iter()
+            .position(|c| c.name == "Abstain")
+            .unwrap();
+        position.candidates.insert(abstain_index, candidate);
 
         Ok(())
     }
 
     pub fn add_voter(ctx: Context<AddVoter>, election_name: String, voter: Pubkey) -> Result<()> {
         let election = &mut ctx.accounts.election;
+
+        // Ensure the signer is the authority
+        require!(
+            ctx.accounts.authority.key() == election.authority,
+            CreateElectionError::Unauthorized
+        );
+
+        // Ensure the election is closed before adding voter
+        require!(
+            election.is_open == false,
+            CreateElectionError::ElectionIsOpen
+        );
 
         // Ensure the voter is not already in the list
         if election.voters.contains(&voter) {
@@ -124,6 +169,9 @@ mod devos {
     ) -> Result<()> {
         let election = &mut ctx.accounts.election;
         let voter_key = ctx.accounts.voter.key();
+
+        // Ensure the election is open before voting
+        require!(election.is_open == true, VoteError::ElectionIsClosed);
 
         // Ensure the position index is valid
         require!(
@@ -165,14 +213,15 @@ mod devos {
         Ok(())
     }
 
-    pub fn tally_votes(
-        ctx: Context<TallyVotes>,
-        election_name: String,
-        authority: Pubkey,
-    ) -> Result<()> {
+    pub fn tally_votes(ctx: Context<TallyVotes>, election_name: String) -> Result<()> {
         let election = &ctx.accounts.election; //does not need to be mutable
 
-        // 1st part is for counting individual votes
+        // Ensure the signer is the authority
+        require!(
+            ctx.accounts.authority.key() == election.authority,
+            VoteError::Unauthorized
+        );
+
         // Iterate over all positions
         for (position_index, position) in election.positions.iter().enumerate() {
             msg!("Position {}: {}", position_index, position.name);
@@ -187,8 +236,22 @@ mod devos {
                 );
             }
         }
-        
-        // 2nd part is for declaring winners
+
+        Ok(())
+    }
+
+    pub fn get_winner(ctx: Context<GetWinner>, election_name: String) -> Result<()> {
+        let election = &ctx.accounts.election; //does not need to be mutable
+
+        // Ensure the signer is the authority
+        require!(
+            ctx.accounts.authority.key() == election.authority,
+            VoteError::Unauthorized
+        );
+
+        // Ensure the election is closed before getting winners
+        require!(election.is_open == false, GetWinnerError::ElectionIsOpen);
+
         let mut winners: Vec<(String, String)> = Vec::new(); // Vec to store (position_name, winning_candidate_name)
         for position in &election.positions {
             let mut top_candidate: Option<&Candidate> = None;
@@ -215,25 +278,51 @@ mod devos {
         }
         Ok(())
     }
+
+    pub fn open_election(ctx: Context<OpenElection>, election_name: String) -> Result<()> {
+        let election = &mut ctx.accounts.election;
+
+        // Ensure the signer is the authority
+        require!(
+            ctx.accounts.authority.key() == election.authority,
+            CreateElectionError::Unauthorized
+        );
+
+        election.is_open = true;
+        Ok(())
+    }
+
+    pub fn close_election(ctx: Context<CloseElection>, election_name: String) -> Result<()> {
+        let election = &mut ctx.accounts.election;
+
+        // Ensure the signer is the authority
+        require!(
+            ctx.accounts.authority.key() == election.authority,
+            CreateElectionError::Unauthorized
+        );
+
+        election.is_open = false;
+        Ok(())
+    }
 }
 
 // --- contexts
 #[derive(Accounts)]
 #[instruction(
-    election_name: String, 
-    max_positions: u32, 
-    max_candidates_per_position: u32,
-    voters:Vec<Pubkey>)]
+        election_name: String, 
+        max_positions: u32, 
+        max_candidates_per_position: u32,
+        voters:Vec<Pubkey>)]
 pub struct CreateElection<'info> {
     #[account(
-        init,
-        seeds = [election_name.as_bytes(),authority.key().as_ref()],
-        bump,
-        payer = authority,
-        space = Election::calculate_size(
-            max_positions as usize, 
-            max_candidates_per_position as usize,
-            voters))]
+            init,
+            seeds = [election_name.as_bytes(),authority.key().as_ref()],
+            bump,
+            payer = authority,
+            space = Election::calculate_size(
+                max_positions as usize, 
+                max_candidates_per_position as usize,
+                voters))]
     pub election: Account<'info, Election>,
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -244,10 +333,10 @@ pub struct CreateElection<'info> {
 #[instruction(election_name: String)]
 pub struct AddPosition<'info> {
     #[account(
-        mut,
-        seeds = [election_name.as_bytes(),authority.key().as_ref()],
-        bump, 
-        has_one = authority)]
+            mut,
+            seeds = [election_name.as_bytes(),authority.key().as_ref()],
+            bump, 
+            has_one = authority)]
     pub election: Account<'info, Election>,
     pub authority: Signer<'info>,
 }
@@ -256,10 +345,10 @@ pub struct AddPosition<'info> {
 #[instruction(election_name: String)]
 pub struct AddCandidate<'info> {
     #[account(
-        mut,
-        seeds = [election_name.as_bytes(),authority.key().as_ref()],
-        bump,
-        has_one = authority)]
+            mut,
+            seeds = [election_name.as_bytes(),authority.key().as_ref()],
+            bump,
+            has_one = authority)]
     pub election: Account<'info, Election>,
     pub authority: Signer<'info>,
 }
@@ -268,10 +357,10 @@ pub struct AddCandidate<'info> {
 #[instruction(election_name: String, authority: Pubkey)]
 pub struct Vote<'info> {
     #[account(
-        mut,
-        seeds = [election_name.as_bytes(),authority.key().as_ref()],
-        bump, 
-        has_one = authority)]
+            mut,
+            seeds = [election_name.as_bytes(),authority.key().as_ref()],
+            bump, 
+            has_one = authority)]
     pub election: Account<'info, Election>,
     pub voter: Signer<'info>,
 }
@@ -280,20 +369,53 @@ pub struct Vote<'info> {
 #[instruction(election_name: String)]
 pub struct AddVoter<'info> {
     #[account(
-        mut,
-        seeds = [election_name.as_bytes(),authority.key().as_ref()],
-        bump, 
-        has_one = authority)]
+            mut,
+            seeds = [election_name.as_bytes(),authority.key().as_ref()],
+            bump, 
+            has_one = authority)]
     pub election: Account<'info, Election>,
     pub authority: Signer<'info>,
 }
 
 #[derive(Accounts)]
-#[instruction(election_name: String, authority: Pubkey)]
+#[instruction(election_name: String)]
 pub struct TallyVotes<'info> {
     #[account(
-        seeds = [election_name.as_bytes(),authority.key().as_ref()],
-        bump)]
+            seeds = [election_name.as_bytes(),authority.key().as_ref()],
+            bump)]
     pub election: Account<'info, Election>,
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+#[instruction(election_name: String)]
+pub struct GetWinner<'info> {
+    #[account(
+            seeds = [election_name.as_bytes(),authority.key().as_ref()],
+            bump)]
+    pub election: Account<'info, Election>,
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+#[instruction(election_name: String)]
+pub struct OpenElection<'info> {
+    #[account(
+            mut,
+            seeds = [election_name.as_bytes(),authority.key().as_ref()],
+            bump)]
+    pub election: Account<'info, Election>,
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+#[instruction(election_name: String)]
+pub struct CloseElection<'info> {
+    #[account(
+            mut,
+            seeds = [election_name.as_bytes(),authority.key().as_ref()],
+            bump)]
+    pub election: Account<'info, Election>,
+    pub authority: Signer<'info>,
 }
 // end of contexts ---

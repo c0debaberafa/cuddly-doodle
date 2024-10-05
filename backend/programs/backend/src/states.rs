@@ -10,6 +10,7 @@ pub struct Election {
     pub max_candidates_per_position: u32,
     pub voters: Vec<Pubkey>,
     pub votes: Vec<VoteRecord>,
+    pub is_open: bool,
 }
 impl Election {
     pub fn calculate_size(
@@ -18,7 +19,7 @@ impl Election {
         voters: Vec<Pubkey>,
     ) -> usize {
         let num_voters = voters.len();
-        let base_size = 8  // Discriminator (for the Election account)
+        let base_size = 8 + 1 + 1 // Discriminator (for the Election account) + bool
             + 32           // Pubkey for authority
             + 4 + 32       // String: length prefix (4 bytes) + max length of election_name (32 bytes)
             + 4; // Vec<Position> prefix (4 bytes for length of positions vector)
@@ -34,7 +35,7 @@ impl Election {
 // The Position state, nested in the Election
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct Position {
-    pub name: String,      // Name of the position
+    pub name: String,               // Name of the position
     pub candidates: Vec<Candidate>, // List of candidates for the position
 }
 

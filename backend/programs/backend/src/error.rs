@@ -14,6 +14,10 @@ pub enum CreateElectionError {
     CandidateAlreadyAdded,
     #[msg("This voter has already been added.")]
     VoterAlreadyAdded,
+    #[msg("This user is unauthorized.")]
+    Unauthorized,
+    #[msg("This election is open, no candidates or positions can be added.")]
+    ElectionIsOpen,
 }
 
 #[error_code]
@@ -26,4 +30,14 @@ pub enum VoteError {
     VoterNotAllowed,
     #[msg("Voter has already voted on this position.")]
     AlreadyVoted,
+    #[msg("This user is unauthorized.")]
+    Unauthorized,
+    #[msg("This election is closed.")]
+    ElectionIsClosed,
+}
+
+#[error_code]
+pub enum GetWinnerError {
+    #[msg("Election is still open.")]
+    ElectionIsOpen,
 }
