@@ -6,7 +6,7 @@ use crate::{error::*, states::*};
 
 // This is your program's public key and it will update
 // automatically when you build the project.
-declare_id!("7yd93bBfwbcrPEBKWqDSJ4Q6SLQnQMfNF8EsQy7RTVb2");
+declare_id!("khhotDd4UuEJknyhqeSLoXMVhpwfVkLzorCW1Td1Ska");
 
 #[program]
 mod devos {
@@ -208,6 +208,7 @@ mod devos {
         election.votes.push(VoteRecord {
             voter: voter_key,
             position_index,
+            candidate_index,
         });
 
         Ok(())
@@ -279,7 +280,7 @@ mod devos {
         Ok(())
     }
 
-    pub fn open_election(ctx: Context<OpenElection>, election_name: String) -> Result<()> {
+    pub fn toggle_election(ctx: Context<ToggleElection>, election_name: String) -> Result<()> {
         let election = &mut ctx.accounts.election;
 
         // Ensure the signer is the authority
@@ -288,20 +289,7 @@ mod devos {
             CreateElectionError::Unauthorized
         );
 
-        election.is_open = true;
-        Ok(())
-    }
-
-    pub fn close_election(ctx: Context<CloseElection>, election_name: String) -> Result<()> {
-        let election = &mut ctx.accounts.election;
-
-        // Ensure the signer is the authority
-        require!(
-            ctx.accounts.authority.key() == election.authority,
-            CreateElectionError::Unauthorized
-        );
-
-        election.is_open = false;
+        election.is_open = !election.is_open;
         Ok(())
     }
 }
@@ -399,18 +387,7 @@ pub struct GetWinner<'info> {
 
 #[derive(Accounts)]
 #[instruction(election_name: String)]
-pub struct OpenElection<'info> {
-    #[account(
-            mut,
-            seeds = [election_name.as_bytes(),authority.key().as_ref()],
-            bump)]
-    pub election: Account<'info, Election>,
-    pub authority: Signer<'info>,
-}
-
-#[derive(Accounts)]
-#[instruction(election_name: String)]
-pub struct CloseElection<'info> {
+pub struct ToggleElection<'info> {
     #[account(
             mut,
             seeds = [election_name.as_bytes(),authority.key().as_ref()],
