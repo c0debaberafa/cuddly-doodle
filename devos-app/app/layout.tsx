@@ -28,7 +28,7 @@ export default function RootLayout({
             </aside>
 
             {/* Main content will take the remaining width */}
-            <main className="flex-1 p-4">
+            <main className="flex-1">
               {children} {/* Dynamic page content will be rendered here */}
             </main>
           </div>
