@@ -48,8 +48,9 @@ pub struct Candidate {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct VoteRecord {
-    pub voter: Pubkey,       // Voter who cast the vote
-    pub position_index: u32, // The index of the position voted on
+    pub voter: Pubkey,        // Voter who cast the vote
+    pub position_index: u32,  // The index of the position voted on
+    pub candidate_index: u32, // The index of the candidate voted on
 }
 
 // end of states ---
