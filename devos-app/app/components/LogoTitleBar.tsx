@@ -4,7 +4,13 @@ import React from "react";
 const LogoTitleBar: React.FC = () => {
   return (
     <div style={styles.titleBar}>
-      <Image src="/logo.png" alt="Logo" width={280} height={50} />
+      <Image
+        src="/logo.png"
+        alt="Logo"
+        width={200}
+        height={100}
+        style={styles.logo}
+      />
     </div>
   );
 };
@@ -12,11 +18,15 @@ const LogoTitleBar: React.FC = () => {
 const styles = {
   titleBar: {
     width: "100%",
-    height: "60px",
+    // Remove fixed height to let the logo define the height
     backgroundColor: "#0c0430",
     display: "flex",
-    alignItems: "center",
-    padding: "0 20px",
+    alignItems: "center", // Centers items vertically
+    justifyContent: "center",
+  },
+  logo: {
+    maxWidth: "100%", // Ensure the logo scales responsively
+    height: "auto", // Keep the aspect ratio of the logo
   },
 };
 
