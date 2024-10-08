@@ -10,6 +10,7 @@ pub struct Election {
     pub max_candidates_per_position: u32,
     pub voters: Vec<Pubkey>,
     pub votes: Vec<VoteRecord>,
+    pub winners: Vec<Winner>,
     pub is_open: bool,
 }
 impl Election {
@@ -27,9 +28,10 @@ impl Election {
         let position_size = 4 + 32  // String: length prefix (4 bytes) + position_name (32 bytes)
             + 4                     // Vec<Candidate> prefix
             + (4 + 32 + 8) * max_candidates_per_position; // Each candidate: 4 bytes (prefix) + name (32 bytes) + vote_count (u64)
-        let voter_size = 4 + 32 * num_voters * 2; //vector of voters
-        let vote_size = 4 + (32 + 4) * num_voters; //vector of votes, assuming it is equal to the number of voters
-        base_size + max_positions * position_size + voter_size + vote_size
+        let voter_size = 4 + 32 * num_voters; //vector of voters
+        let vote_size = 4 + (32 + 8) * num_voters; //vector of votes, assuming it is equal to the number of voters
+        let winner_size = 4 + (32 + 32) * max_positions;
+        base_size + max_positions * position_size + voter_size + vote_size + winner_size
     }
 }
 // The Position state, nested in the Election
@@ -53,4 +55,8 @@ pub struct VoteRecord {
     pub candidate_index: u32, // The index of the candidate voted on
 }
 
-// end of states ---
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct Winner {
+    pub position_name: String,
+    pub candidate_name: String,
+}
