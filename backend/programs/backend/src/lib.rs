@@ -6,7 +6,11 @@ use crate::{error::*, states::*};
 
 // This is your program's public key and it will update
 // automatically when you build the project.
-declare_id!("BxDGERvn12dMHLgUZttnPSLGy9wCUfZJi7da8K2qf1xX");
+//declare_id!("BxDGERvn12dMHLgUZttnPSLGy9wCUfZJi7da8K2qf1xX"); //sol-pg
+//declare_id!("23Z7Jqq6LYZeSts5KJeQMyFsB9HMB7CxEZbqJ9uNkrEc"); //anchor-init
+
+declare_id!("EP24aYmcChzvMHYSmi4SzEcuGLBm8xJJ6ijsXkv4Naj3"); //after-deploy
+
 
 #[program]
 mod devos {
