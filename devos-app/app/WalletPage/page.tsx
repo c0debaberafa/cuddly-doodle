@@ -26,6 +26,7 @@ const WalletPage = () => {
       try {
         // Request wallet connection
         const response = await window.solana.request({ method: "connect" });
+        console.log(response);
 
         // Check if the wallet is connected and get the public key
         if (window.solana.isConnected) {
