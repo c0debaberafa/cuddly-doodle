@@ -1,3 +1,4 @@
+
 import Ballot from "../components/Ballot";
 
 export default function VoterPage() {
