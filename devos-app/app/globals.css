@@ -18,4 +18,7 @@
         text-xs font-bold 
         transition-all duration-100 scale-0 origin-left;
   }
+  .tableData {
+    @apply border-2 p-4
+  }
 }
