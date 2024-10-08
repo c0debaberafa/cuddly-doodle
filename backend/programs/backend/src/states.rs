@@ -46,7 +46,7 @@ pub struct Position {
 pub struct Candidate {
     pub name: String,    // Candidate's name
     pub vote_count: u64, // Number of votes received by the candidate
-}
+}   
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct VoteRecord {
