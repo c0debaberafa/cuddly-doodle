@@ -254,43 +254,35 @@ mod devos {
         // Ensure the election is closed before getting winners
         require!(election.is_open == false, GetWinnerError::ElectionIsOpen);
 
-        let mut winners: Vec<(String, String)> = Vec::new();
+        let mut winners: Vec<Winner> = Vec::new(); // Updated to store multiple winners
+
         for position in &election.positions {
-            let mut top_candidate: Option<&Candidate> = None;
+            let mut max_vote_count: u64 = 0;
+            let mut top_candidates: Vec<String> = Vec::new();
 
             for candidate in &position.candidates {
-                match top_candidate {
-                    Some(c) if candidate.vote_count > c.vote_count => {
-                        top_candidate = Some(candidate);
-                    }
-                    None => {
-                        top_candidate = Some(candidate);
-                    }
-                    _ => {}
+                if candidate.vote_count > max_vote_count {
+                    // Found a new candidate with the highest votes, reset the top candidates list
+                    max_vote_count = candidate.vote_count;
+                    top_candidates.clear();
+                    top_candidates.push(candidate.name.clone());
+                } else if candidate.vote_count == max_vote_count {
+                    // Tie detected, add this candidate to the top candidates list
+                    top_candidates.push(candidate.name.clone());
                 }
             }
 
-            // Add the winning candidate to the list of winners
-            if let Some(winning_candidate) = top_candidate {
-                winners.push((position.name.clone(), winning_candidate.name.clone()));
+            // If there are candidates tied for the top position, record them
+            if !top_candidates.is_empty() {
+                winners.push(Winner {
+                    position_name: position.name.clone(),
+                    candidate_names: top_candidates, // Store the list of tied candidates
+                });
             }
         }
 
-        election.winners = winners
-            .into_iter()
-            .map(|(position_name, candidate_name)| Winner {
-                position_name,
-                candidate_name,
-            }).collect::<Vec<Winner>>();
-
-        // Log winners
-        for winner in &election.winners {
-            msg!(
-                "Position: {} - Winner: {}",
-                winner.position_name,
-                winner.candidate_name
-            );
-        }
+        // Store the winners in the election account
+        election.winners = winners;
 
         Ok(())
     }

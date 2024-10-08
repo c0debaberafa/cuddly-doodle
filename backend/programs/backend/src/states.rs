@@ -30,7 +30,7 @@ impl Election {
             + (4 + 32 + 8) * max_candidates_per_position; // Each candidate: 4 bytes (prefix) + name (32 bytes) + vote_count (u64)
         let voter_size = 4 + 32 * num_voters; //vector of voters
         let vote_size = 4 + (32 + 8) * num_voters; //vector of votes, assuming it is equal to the number of voters
-        let winner_size = 4 + (32 + 32) * max_positions;
+        let winner_size = 4 + (32 + 32 * 3) * max_positions; //multiplied by 3 assuming 3-way tie is most extreme case
         base_size + max_positions * position_size + voter_size + vote_size + winner_size
     }
 }
@@ -46,7 +46,7 @@ pub struct Position {
 pub struct Candidate {
     pub name: String,    // Candidate's name
     pub vote_count: u64, // Number of votes received by the candidate
-}   
+}
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct VoteRecord {
@@ -55,8 +55,8 @@ pub struct VoteRecord {
     pub candidate_index: u32, // The index of the candidate voted on
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct Winner {
     pub position_name: String,
-    pub candidate_name: String,
+    pub candidate_names: Vec<String>,
 }
