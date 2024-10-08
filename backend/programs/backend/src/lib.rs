@@ -6,7 +6,7 @@ use crate::{error::*, states::*};
 
 // This is your program's public key and it will update
 // automatically when you build the project.
-declare_id!("khhotDd4UuEJknyhqeSLoXMVhpwfVkLzorCW1Td1Ska");
+declare_id!("BxDGERvn12dMHLgUZttnPSLGy9wCUfZJi7da8K2qf1xX");
 
 #[program]
 mod devos {
@@ -24,9 +24,10 @@ mod devos {
         election.election_name = election_name;
         election.positions = Vec::new(); // Initialize with an empty list of positions
         election.max_positions = max_positions;
-        election.max_candidates_per_position = max_candidates_per_position;
+        election.max_candidates_per_position = max_candidates_per_position + 1; //to account for abstain
         election.voters = voters;
         election.votes = Vec::new(); // Initialize with an empty list of votes
+        election.winners = Vec::new(); //initialize with an empty list of winners
         election.is_open = false; //Initialize election as closed
 
         Ok(())
@@ -242,7 +243,7 @@ mod devos {
     }
 
     pub fn get_winner(ctx: Context<GetWinner>, election_name: String) -> Result<()> {
-        let election = &ctx.accounts.election; //does not need to be mutable
+        let election = &mut ctx.accounts.election;
 
         // Ensure the signer is the authority
         require!(
@@ -253,9 +254,10 @@ mod devos {
         // Ensure the election is closed before getting winners
         require!(election.is_open == false, GetWinnerError::ElectionIsOpen);
 
-        let mut winners: Vec<(String, String)> = Vec::new(); // Vec to store (position_name, winning_candidate_name)
+        let mut winners: Vec<(String, String)> = Vec::new();
         for position in &election.positions {
             let mut top_candidate: Option<&Candidate> = None;
+
             for candidate in &position.candidates {
                 match top_candidate {
                     Some(c) if candidate.vote_count > c.vote_count => {
@@ -264,19 +266,32 @@ mod devos {
                     None => {
                         top_candidate = Some(candidate);
                     }
-                    _ => {} // Keep the existing top candidate if no higher vote count is found
+                    _ => {}
                 }
             }
 
-            // If there's a winning candidate for the position, add it to the winners list
+            // Add the winning candidate to the list of winners
             if let Some(winning_candidate) = top_candidate {
                 winners.push((position.name.clone(), winning_candidate.name.clone()));
             }
         }
 
-        for (position_name, candidate_name) in &winners {
-            msg!("Position: {} - Winner: {}", position_name, candidate_name);
+        election.winners = winners
+            .into_iter()
+            .map(|(position_name, candidate_name)| Winner {
+                position_name,
+                candidate_name,
+            }).collect::<Vec<Winner>>();
+
+        // Log winners
+        for winner in &election.winners {
+            msg!(
+                "Position: {} - Winner: {}",
+                winner.position_name,
+                winner.candidate_name
+            );
         }
+
         Ok(())
     }
 
@@ -360,9 +375,17 @@ pub struct AddVoter<'info> {
             mut,
             seeds = [election_name.as_bytes(),authority.key().as_ref()],
             bump, 
+            realloc = Election::calculate_size(
+                election.max_positions as usize,
+                election.max_candidates_per_position as usize,
+                election.voters.clone()),
+            realloc::payer = authority,
+            realloc::zero = true,
             has_one = authority)]
     pub election: Account<'info, Election>,
+    #[account(mut)]
     pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -379,6 +402,7 @@ pub struct TallyVotes<'info> {
 #[instruction(election_name: String)]
 pub struct GetWinner<'info> {
     #[account(
+            mut,
             seeds = [election_name.as_bytes(),authority.key().as_ref()],
             bump)]
     pub election: Account<'info, Election>,
