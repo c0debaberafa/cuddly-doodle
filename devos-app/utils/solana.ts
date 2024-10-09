@@ -53,5 +53,71 @@ export const createElection = async (
   }
 };
 
+export const addPosition = async (
+  electionName: string,
+  positionName: string,
+  publicKey: PublicKey
+) => {
+  const provider = getProvider(window.solana); // Use the wallet from the window object
+  const program = await getProgram(provider, idl, programId);
+
+  try {
+    const electionPDA = await deriveElectionPDA(
+      electionName,
+      publicKey,
+      programId
+    );
+
+    const tx = await program.rpc.addPosition(electionName, positionName, {
+      accounts: {
+        election: electionPDA,
+        authority: publicKey,
+        systemProgram: SystemProgram.programId,
+      },
+      signers: [],
+    });
+
+    console.log("Position created successfully. Transaction:", tx);
+  } catch (error) {
+    console.error("Error creating position:", error);
+  }
+};
+
+export const addCandidate = async (
+  electionName: string,
+  positionIndex: number,
+  candidateName: string,
+  publicKey: PublicKey
+) => {
+  const provider = getProvider(window.solana); // Use the wallet from the window object
+  const program = await getProgram(provider, idl, programId);
+
+  try {
+    const electionPDA = await deriveElectionPDA(
+      electionName,
+      publicKey,
+      programId
+    );
+
+    const tx = await program.rpc.addCandidate(
+      electionName,
+      positionIndex,
+      candidateName,
+      {
+        accounts: {
+          election: electionPDA,
+          authority: publicKey,
+          systemProgram: SystemProgram.programId,
+        },
+        signers: [],
+      }
+    );
+
+    console.log("Candidate created successfully. Transaction:", tx);
+  } catch (error) {
+    console.error("Error creating candidate:", error);
+  }
+};
+
 // Export connection if needed
 export { connection, getProvider, getProgram };

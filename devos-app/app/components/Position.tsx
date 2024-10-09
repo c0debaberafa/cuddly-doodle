@@ -1,15 +1,15 @@
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
-import { createElection } from "@/utils/solana";
+import { createElection, addPosition, addCandidate } from "@/utils/solana";
 
 export default function Position() {
   const [electionName, setElectionName] = useState<string>("");
-  const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [positions, setPositions] = useState<
     Array<{ positionName: string; candidates: string[] }>
   >([]);
+  const [showSuccess, setShowSuccess] = useState<boolean>(false);
 
-  const addPosition = () => {
+  const addPositionF = () => {
     setPositions([...positions, { positionName: "", candidates: [""] }]);
   };
 
@@ -24,11 +24,41 @@ export default function Position() {
     };
     console.log("Submitting election data: ", electionData);
 
+    // createElection(electionName)
     try {
       await createElection(electionName, publicKey);
       console.log("Election creation request sent.");
     } catch (error) {
       console.error("Error creating election: ", error);
+    }
+
+    // loop addPosition
+    try {
+      for (var i = 0; i < positions.length; i++) {
+        console.log(positions[i]);
+        await addPosition(electionName, positions[i].positionName, publicKey);
+        console.log("Done");
+      }
+    } catch (error) {
+      console.error("Error adding position: ", error);
+    }
+
+    // loop addCandidate
+    try {
+      for (var i = 0; i < positions.length; i++) {
+        for (var j = 0; j < positions[i].candidates.length; j++) {
+          console.log(positions[i].candidates[j]);
+          await addCandidate(
+            electionName,
+            i,
+            positions[i].candidates[j],
+            publicKey
+          );
+          console.log("Done");
+        }
+      }
+    } catch (error) {
+      console.error("Error adding position: ", error);
     }
 
     setShowSuccess(true);
@@ -59,7 +89,7 @@ export default function Position() {
         />
         <button
           className="bg-gray-500 hover:bg-green-500 text-white font-bold py-2 px-4 rounded"
-          onClick={addPosition}
+          onClick={addPositionF}
         >
           Add Position
         </button>
@@ -111,7 +141,7 @@ const PositionBox = ({
     updatePosition({ ...position, positionName: e.target.value });
   };
 
-  const addCandidate = () => {
+  const addCandidateF = () => {
     updatePosition({
       ...position,
       candidates: [...position.candidates, ""],
@@ -143,7 +173,7 @@ const PositionBox = ({
       ))}
       <button
         className="bg-gray-500 hover:bg-green-500 text-white font-bold py-2 px-4 rounded float-right"
-        onClick={addCandidate}
+        onClick={addCandidateF}
       >
         Add Candidate
       </button>
