@@ -19,6 +19,6 @@
         transition-all duration-100 scale-0 origin-left;
   }
   .tableData {
-    @apply border-2 p-4
+    @apply border-2 p-4 
   }
 }

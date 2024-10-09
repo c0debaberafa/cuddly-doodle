@@ -1,24 +1,67 @@
-import React from "react";
+"use client";
+ 
+import React, { useMemo } from "react";
 import {
   ConnectionProvider,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
-import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
+// import { UnsafeBurnerWalletAdapter } from "@solana/wallet-adapter-wallets";
+ 
+// Default styles that can be overridden by your app
+require("@solana/wallet-adapter-react-ui/styles.css");
 
-const WalletProviderComponent: React.FC<{ children: React.ReactNode }> = ({
+// imports here
+ 
+export default function AppWalletProvider({
   children,
-}) => {
-  const endpoint = clusterApiUrl("devnet"); // Change to "mainnet-beta" for production
-  const wallets = [new PhantomWalletAdapter()];
-
+}: {
+  children: React.ReactNode;
+}) {
+  const network = WalletAdapterNetwork.Devnet;
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const wallets = useMemo(
+    () => [
+      // manually add any legacy wallet adapters here
+      // new UnsafeBurnerWalletAdapter(),
+    ],
+    [network],
+  );
+ 
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
-        {children}
+        <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
   );
-};
+}
 
-export default WalletProviderComponent;
+
+
+// import React, { useMemo } from "react";
+// import {
+//   ConnectionProvider,
+//   WalletProvider,
+// } from "@solana/wallet-adapter-react";
+// import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
+// import { clusterApiUrl } from "@solana/web3.js";
+
+// const WalletProviderComponent: React.FC<{ children: React.ReactNode }> = ({
+//   children,
+// }) => {
+//   const endpoint = clusterApiUrl("devnet"); // Change to "mainnet-beta" for production
+//   const wallets = [new PhantomWalletAdapter()];
+
+//   return (
+//     <ConnectionProvider endpoint={endpoint}>
+//       <WalletProvider wallets={wallets} autoConnect>
+//         {children}
+//       </WalletProvider>
+//     </ConnectionProvider>
+//   );
+// };
+
+// export default WalletProviderComponent;

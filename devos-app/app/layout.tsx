@@ -1,6 +1,7 @@
 import "./globals.css"; // Tailwind CSS should be included here
 import LogoTitleBar from "./components/LogoTitleBar"; // Import your component
 import SideNavBar from "./components/SideNavbar"; // Import your component
+import AppWalletProvider from "./components/WalletProvider";
 
 export const metadata = {
   title: "My App",
@@ -29,7 +30,7 @@ export default function RootLayout({
 
             {/* Main content will take the remaining width */}
             <main className="flex-1">
-              {children} {/* Dynamic page content will be rendered here */}
+              <AppWalletProvider>{children}</AppWalletProvider>
             </main>
           </div>
         </div>

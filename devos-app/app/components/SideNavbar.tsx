@@ -1,10 +1,13 @@
 "use client";
 import React from "react";
-import { FaUser, FaVoteYea, FaWallet } from "react-icons/fa";
+import { FaHome, FaUser, FaVoteYea, FaWallet } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
 export default function SideNavbar() {
   const router = useRouter();
+  const visitHome = () => {
+    router.push("/"); // Navigate to the "elections" page
+  };
   const visitCreatedElections = () => {
     router.push("/OwnedElections"); // Navigate to the "elections" page
   };
@@ -17,10 +20,15 @@ export default function SideNavbar() {
 
   return (
     <div
-      className="h-full w-20 m-0
-                        flex flex-col
-                        bg-gray-900 text-white shadow-lg"
+      className="fixed top-0 left-0 h-screen w-20 m-0
+                 flex flex-col
+                bg-[#0c0430] text-white shadow-lg z-50"
     >
+      <SideBarIcon
+        icon={<FaHome size="28" />}
+        text={"Home"}
+        onClick={visitHome}
+      />
       <SideBarIcon
         icon={<FaUser size="28" />}
         text={"Owned Elections"}

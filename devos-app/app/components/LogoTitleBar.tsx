@@ -7,8 +7,8 @@ const LogoTitleBar: React.FC = () => {
       <Image
         src="/logo.png"
         alt="Logo"
-        width={200}
-        height={50}
+        width="150"
+        height="64"
         style={styles.logo}
       />
     </div>
@@ -18,7 +18,6 @@ const LogoTitleBar: React.FC = () => {
 const styles = {
   titleBar: {
     width: "100%",
-    height: "auto",
     // Remove fixed height to let the logo define the height
     backgroundColor: "#0c0430",
     display: "flex",

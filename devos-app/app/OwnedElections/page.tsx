@@ -13,7 +13,7 @@ const OwnedElections = () => {
     <div className="h-full p-12 bg-slate-200">
       <h1 className="text-3xl text-black mb-1">Owned Elections</h1>
       <p>
-        <i>This is the list of all elections you have created.</i>
+        <i>This is the list of all elections you have created. Add a new election by pressing the "Create New Election" button.</i>
       </p>
       <hr className="my-3 border-black"></hr>
       <div className="mt-5 justify-center">
