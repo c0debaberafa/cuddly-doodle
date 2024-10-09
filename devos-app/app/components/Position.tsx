@@ -1,5 +1,6 @@
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
+import { createElection } from "@/utils/solana";
 
 export default function Position() {
   const [electionName, setElectionName] = useState<string>("");
@@ -16,12 +17,19 @@ export default function Position() {
     setElectionName(e.target.value);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const electionData = {
-        electionName,
-        positions
+      electionName,
+      positions,
     };
     console.log("Submitting election data: ", electionData);
+
+    try {
+      await createElection(electionName, publicKey);
+      console.log("Election creation request sent.");
+    } catch (error) {
+      console.error("Error creating election: ", error);
+    }
 
     setShowSuccess(true);
 
@@ -29,7 +37,7 @@ export default function Position() {
     setTimeout(() => {
       setShowSuccess(false);
     }, 2500);
-  }
+  };
 
   const { publicKey } = useWallet();
 
@@ -38,15 +46,16 @@ export default function Position() {
       <div className="">
         <h1>Hello: </h1>
         {publicKey ? (
-            <p>Public Key: {publicKey.toBase58()}</p>
+          <p>Public Key: {publicKey.toBase58()}</p>
         ) : (
-            <p>Not connected to a wallet.</p>
+          <p>Not connected to a wallet.</p>
         )}
         <label className="block justify-center">Election Name</label>
-        <input className="my-4 w-full p-2 mb-2 rounded" 
-               type="text"
-               value={electionName}
-               onChange={handleElectionNameChange}
+        <input
+          className="my-4 w-full p-2 mb-2 rounded"
+          type="text"
+          value={electionName}
+          onChange={handleElectionNameChange}
         />
         <button
           className="bg-gray-500 hover:bg-green-500 text-white font-bold py-2 px-4 rounded"
@@ -55,21 +64,23 @@ export default function Position() {
           Add Position
         </button>
         {positions.map((position, index) => (
-          <PositionBox 
-            key={index} 
+          <PositionBox
+            key={index}
             index={index}
-            position={position}           
+            position={position}
             updatePosition={(updatedPosition) => {
-                const newPositions = [...positions];
-                newPositions[index] = updatedPosition;
-                setPositions(newPositions);
+              const newPositions = [...positions];
+              newPositions[index] = updatedPosition;
+              setPositions(newPositions);
             }}
           />
         ))}
       </div>
       <hr className="my-3 border-black"></hr>
-      <button className="bg-gray-500 hover:bg-green-500 text-white font-bold py-2 px-4 rounded float-right"
-              onClick={handleSubmit}>
+      <button
+        className="bg-gray-500 hover:bg-green-500 text-white font-bold py-2 px-4 rounded float-right"
+        onClick={handleSubmit}
+      >
         Submit
       </button>
       {showSuccess && (
@@ -85,75 +96,78 @@ export default function Position() {
 }
 
 const PositionBox = ({
-    index,
-    position,
-    updatePosition,
-  }: {
-    index: number;
-    position: { positionName: string; candidates: string[] };
-    updatePosition: (position: { positionName: string; candidates: string[] }) => void;
-  }) => {
-    const handlePositionNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      updatePosition({ ...position, positionName: e.target.value });
-    };
-  
-    const addCandidate = () => {
-      updatePosition({
-        ...position,
-        candidates: [...position.candidates, ""],
-      });
-    };
-  
-    const handleCandidateChange = (value: string, i: number) => {
-      const newCandidates = [...position.candidates];
-      newCandidates[i] = value; // Update the candidate's name in the array
-      updatePosition({ ...position, candidates: newCandidates });
-    };
-  
-    return (
-      <div className="justify-center bg-slate-900 text-black p-8 rounded-lg max-w-s m-4 overflow-hidden">
-        <input
-          className="w-64 p-2 mb-2 rounded"
-          type="text"
-          placeholder="Position Name"
-          value={position.positionName}
-          onChange={handlePositionNameChange}
-        />
-        {position.candidates.map((candidate, i) => (
-          <CandidateField
-            key={i}
-            index={i}
-            value={candidate}
-            onChange={(e: any) => handleCandidateChange(e.target.value, i)}
-          />
-        ))}
-        <button
-          className="bg-gray-500 hover:bg-green-500 text-white font-bold py-2 px-4 rounded float-right"
-          onClick={addCandidate}
-        >
-          Add Candidate
-        </button>
-      </div>
-    );
+  index,
+  position,
+  updatePosition,
+}: {
+  index: number;
+  position: { positionName: string; candidates: string[] };
+  updatePosition: (position: {
+    positionName: string;
+    candidates: string[];
+  }) => void;
+}) => {
+  const handlePositionNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updatePosition({ ...position, positionName: e.target.value });
   };
-  
-  const CandidateField = ({
-    index,
-    value,
-    onChange,
-  }: {
-    index: number;
-    value: string;
-    onChange: any;
-  }) => (
-    <div className="my-2">
-      <label className="text-white">Candidate {index + 1}: </label>
+
+  const addCandidate = () => {
+    updatePosition({
+      ...position,
+      candidates: [...position.candidates, ""],
+    });
+  };
+
+  const handleCandidateChange = (value: string, i: number) => {
+    const newCandidates = [...position.candidates];
+    newCandidates[i] = value; // Update the candidate's name in the array
+    updatePosition({ ...position, candidates: newCandidates });
+  };
+
+  return (
+    <div className="justify-center bg-slate-900 text-black p-8 rounded-lg max-w-s m-4 overflow-hidden">
       <input
-        className="w-full p-2 mb-2 rounded"
+        className="w-64 p-2 mb-2 rounded"
         type="text"
-        value={value}
-        onChange={onChange}
-        placeholder="Candidate Name"
+        placeholder="Position Name"
+        value={position.positionName}
+        onChange={handlePositionNameChange}
       />
+      {position.candidates.map((candidate, i) => (
+        <CandidateField
+          key={i}
+          index={i}
+          value={candidate}
+          onChange={(e: any) => handleCandidateChange(e.target.value, i)}
+        />
+      ))}
+      <button
+        className="bg-gray-500 hover:bg-green-500 text-white font-bold py-2 px-4 rounded float-right"
+        onClick={addCandidate}
+      >
+        Add Candidate
+      </button>
     </div>
   );
+};
+
+const CandidateField = ({
+  index,
+  value,
+  onChange,
+}: {
+  index: number;
+  value: string;
+  onChange: any;
+}) => (
+  <div className="my-2">
+    <label className="text-white">Candidate {index + 1}: </label>
+    <input
+      className="w-full p-2 mb-2 rounded"
+      type="text"
+      value={value}
+      onChange={onChange}
+      placeholder="Candidate Name"
+    />
+  </div>
+);
